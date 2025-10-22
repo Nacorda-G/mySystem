@@ -1,8 +1,6 @@
 
 package config;
 import java.sql.*;
-import main.mainCode;
-import static main.mainCode.viewUsers;
 
 
 public class config {
@@ -137,56 +135,17 @@ public void updateRecord(String sql, Object... params) {
 
     } catch (SQLException e) {
         System.out.println("Error updating record: " + e.getMessage());
-    }
-}
-
- 
-public void adminDashboard(config con) {
-        while (true) {
-            System.out.println("=== ADMIN DASHBOARD ===");
-            System.out.println("1. View & Approve Accounts");
-            System.out.println("2. Logout\n");
-            System.out.print("Choose an option: ");
-
-            if (!mainCode.inp.hasNextInt()) {
-                System.out.println("Invalid input. Please enter a number.\n");
-                mainCode.inp.nextLine();
-                continue;
-            }
-
-            int respo = mainCode.inp.nextInt();
-            mainCode.inp.nextLine(); // consume newline
-
-            switch (respo) {
-                case 1:
-                    viewUsers();
-                    System.out.print("Enter ID to Approve: ");
-                    if (!mainCode.inp.hasNextInt()) {
-                        System.out.println("Invalid ID.\n");
-                        mainCode.inp.nextLine();
-                        continue;
-                    }
-                    int ids = mainCode.inp.nextInt();
-                    mainCode.inp.nextLine();
-
-                    String sql = "UPDATE tbl_users SET u_status = ? WHERE u_id = ?";
-                    con.updateRecord(sql, "Approved", ids);
-                    System.out.println("User with ID " + ids + " has been approved!\n");
-                    break;
-                case 2:
-                    System.out.println("Logging out...\n");
-                    return; // ✅ exit dashboard
-
-                default:
-                    System.out.println("Invalid choice. Try again.\n");
-            }
         }
     }
 
-    
-     
-     
-     
-     
-    
+public static void viewUsers() {
+        String Query = "SELECT * FROM tbl_users";
+        
+        String[] membershipHeaders = {"ID", "Name", "Role", "Email", "Status"};
+        String[] membershipColumns = {"u_id", "u_name", "u_role", "u_email", "u_status"};
+
+        config con = new config();
+        con.viewRecords(Query, membershipHeaders, membershipColumns);
+    }
+
 }
