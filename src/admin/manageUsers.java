@@ -1,6 +1,5 @@
 
 package admin;
-import UserAuthentication.Authentication;
 import java.util.Scanner;
 import config.config;
 import static config.config.viewUsers;
@@ -65,7 +64,7 @@ public class manageUsers {
         System.out.print("Enter New Email: ");
         String email = inp.nextLine();
 
-        System.out.print("Enter New Status (Approved/Pending/Banned): ");
+        System.out.print("Enter New Status (Approved/Pending): ");
         String status = inp.nextLine();
         
         config con = new config();

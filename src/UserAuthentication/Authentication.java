@@ -1,5 +1,6 @@
 
 package UserAuthentication;
+import admin.manageServices;
 import main.mainCode;
 import config.config;
 import admin.manageUsers;
@@ -131,9 +132,10 @@ public class Authentication {
             System.out.println("1. Approve User");
             System.out.println("2. Manage Users");
             System.out.println("3. Manage Services");
-            System.out.println("4. Manage Members");
-            System.out.println("5. Reports");
-            System.out.println("6. Logout\n");
+            System.out.println("4. Manage Membership Plan");
+            System.out.println("5. Manage Members");
+            System.out.println("6. Reports");
+            System.out.println("7. Logout\n");
             System.out.print("Choose an option: ");
 
             if (!mainCode.inp.hasNextInt()) {
@@ -166,6 +168,8 @@ public class Authentication {
                     mu.manageUsers(con);
                     break;
                 case 3:
+                    manageServices ms = new manageServices();
+                    ms.menu();
                     break;
                 case 4:
                     break;
@@ -221,10 +225,9 @@ public class Authentication {
         System.out.println("Welcome, " + Authentication.loggedInFullName + "!");
         System.out.println("1. Register Member");
         System.out.println("2. View Members List");
-        System.out.println("3. View Assigned Members");
-        System.out.println("3. View Membership Plans");
-        System.out.println("3. View Membership Status");
-        System.out.println("4. Logout");
+        System.out.println("3. View Trainer Assigned to Members");
+        System.out.println("4. View Membership Plans");        
+        System.out.println("5. Logout");
         System.out.print("Enter choice: ");
 
         if (!mainCode.inp.hasNextInt()) {
