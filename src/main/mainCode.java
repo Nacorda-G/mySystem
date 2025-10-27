@@ -7,7 +7,7 @@ public class mainCode {
     public static Scanner inp = new Scanner(System.in);
     
 
-    // ✅ Main menu method
+    
     public static void mainMenu() {
         Authentication aut = new Authentication();
 
@@ -37,7 +37,7 @@ public class mainCode {
                     break;
                 case 3:
                     System.out.println("Exiting system...");
-                    return; // ✅ stop the loop and exit the program
+                    return; 
                 default:
                     System.out.println("Invalid input, Try Again.\n");
                     break;
@@ -45,9 +45,9 @@ public class mainCode {
         }
     }
 
-    // ✅ Main method (program entry point)
+    
     public static void main(String[] args) {
-        mainMenu(); // start main menu when the program runs
+        mainMenu(); 
     }
 }
 

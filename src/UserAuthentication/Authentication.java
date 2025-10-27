@@ -2,6 +2,7 @@
 package UserAuthentication;
 import main.mainCode;
 import config.config;
+import admin.manageUsers;
 import static config.config.viewUsers;
 import java.util.List;
 import java.util.Map;
@@ -124,7 +125,7 @@ public class Authentication {
         System.out.println("\nRegistration successful! Please wait for admin approval.\n");
     }
 
-    private void adminDashboard(config con) {
+    public void adminDashboard(config con) {
         while (true) {
             System.out.println("=== ADMIN DASHBOARD ===");
             System.out.println("1. Approve User");
@@ -161,9 +162,19 @@ public class Authentication {
                     System.out.println("User with ID " + ids + " has been approved!\n");
                     break;
                 case 2:
+                    manageUsers mu = new manageUsers();
+                    mu.manageUsers(con);
+                    break;
+                case 3:
+                    break;
+                case 4:
+                    break;
+                case 5:
+                    break;
+                case 6:
                     System.out.println("Logging out...\n");
                     mainCode.mainMenu();
-                    return; // ✅ exit dashboard
+                    return;
 
                 default:
                     System.out.println("Invalid choice. Try again.\n");
@@ -171,7 +182,7 @@ public class Authentication {
         }
     }
     
-    private void trainerDashboard(config con) {
+    public void trainerDashboard(config con) {
         while (true) {
         System.out.println("=== TRAINER DASHBOARD ===");
         System.out.println("1. View Assigned Members");
@@ -244,6 +255,7 @@ public class Authentication {
     }
 }
 
+   
 
 
 
