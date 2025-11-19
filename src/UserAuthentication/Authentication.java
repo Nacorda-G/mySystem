@@ -1,10 +1,12 @@
 
 package UserAuthentication;
+import admin.manageMembership;
 import admin.manageServices;
 import main.mainCode;
 import config.config;
 import admin.manageUsers;
 import static config.config.viewUsers;
+import java.sql.*;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +14,7 @@ public class Authentication {
     public static int loggedInUserId;
     public static String loggedInFullName;
     public static String loggedInRole;
+    
 
     public void addLogin() {
         System.out.println("\nLOGIN");
@@ -172,10 +175,14 @@ public class Authentication {
                     ms.menu();
                     break;
                 case 4:
+                    manageMembership membership = new manageMembership();
+                    membership.membershipDashboard();
                     break;
                 case 5:
                     break;
                 case 6:
+                    break;
+                case 7:
                     System.out.println("Logging out...\n");
                     mainCode.mainMenu();
                     return;
@@ -189,10 +196,9 @@ public class Authentication {
     public void trainerDashboard(config con) {
         while (true) {
         System.out.println("=== TRAINER DASHBOARD ===");
-        System.out.println("1. View Assigned Members");
-        System.out.println("2. Check Member's Progress");
-        System.out.println("3. View Schedules");        
-        System.out.println("4. Logout\n");
+        System.out.println("1.View Members List");
+        System.out.println("2. Check Member's Progress");        
+        System.out.println("3. Logout\n");
         System.out.print("Choose an option: ");
 
         if (!mainCode.inp.hasNextInt()) {
@@ -205,10 +211,11 @@ public class Authentication {
         mainCode.inp.nextLine();
 
         switch (choice) {
-            case 1:
-                //viewApprovedMembers(con);
+            case 1:                
                 break;
             case 2:
+                break;
+            case 3:
                 System.out.println("Logging out...\n");
                 mainCode.mainMenu(); // ✅ return to main login/register
                 return;
@@ -225,9 +232,8 @@ public class Authentication {
         System.out.println("Welcome, " + Authentication.loggedInFullName + "!");
         System.out.println("1. Register Member");
         System.out.println("2. View Members List");
-        System.out.println("3. View Trainer Assigned to Members");
-        System.out.println("4. View Membership Plans");        
-        System.out.println("5. Logout");
+        System.out.println("3. View Membership Plans");        
+        System.out.println("4. Logout");
         System.out.print("Enter choice: ");
 
         if (!mainCode.inp.hasNextInt()) {
@@ -240,13 +246,14 @@ public class Authentication {
 
         switch (choice) {
             case 1:
-                //viewAssignedTasks();
+                registerMember(con);
                 break;
             case 2:
-                //updateTaskStatus();
+                viewMembersList(con);
                 break;
             case 3:
-                //viewMembersList();
+                manageMembership membership = new manageMembership();
+                membership.viewPlans();
                 break;
             case 4:
                 System.out.println("Logging out...");
@@ -258,10 +265,129 @@ public class Authentication {
     }
 }
 
+    
+
+    // ============================================
+    // CASE 1 — REGISTER MEMBER
+    // ============================================
+    private static void registerMember(config con) {
+    try {
+        System.out.println("\n=== REGISTER MEMBER ===");
+
+        System.out.print("Full Name: ");
+        String name = mainCode.inp.nextLine();
+
+        System.out.print("Age: ");
+        int age = mainCode.inp.nextInt(); // maps to member_age
+        mainCode.inp.nextLine();
+        
+        manageMembership membership = new manageMembership();
+        membership.viewPlans();
+
+        System.out.print("Membership Plan ID: ");
+        int planId = mainCode.inp.nextInt(); // maps to m_id
+        mainCode.inp.nextLine();
+
+        // Validate Plan
+        String checkPlanSQL = "SELECT requires_trainer FROM tbl_membershipPlan WHERE m_id = ?";
+        PreparedStatement checkPlan = con.connectDB().prepareStatement(checkPlanSQL);
+        checkPlan.setInt(1, planId);
+        ResultSet planRS = checkPlan.executeQuery();
+
+        if (!planRS.next()) {
+            System.out.println("Invalid membership plan! Registration cancelled.");
+            return;
+        }
+
+        boolean requiresTrainer = planRS.getBoolean("requires_trainer");
+        Integer trainerId = null;
+
+        if (requiresTrainer) {
+            // Show Available Trainers
+            System.out.println("\n--- Available Trainers ---");
+            String trainerListSQL = "SELECT u_id, u_name FROM tbl_users WHERE u_role = 'Trainer'";
+            PreparedStatement listTrainers = con.connectDB().prepareStatement(trainerListSQL);
+            ResultSet trainerList = listTrainers.executeQuery();
+
+            while (trainerList.next()) {
+                System.out.printf("ID: %-5d Name: %s%n",
+                        trainerList.getInt("u_id"), trainerList.getString("u_name"));
+            }
+
+            System.out.print("\nEnter Trainer ID: ");
+            trainerId = mainCode.inp.nextInt();
+            mainCode.inp.nextLine();
+
+            // Validate Trainer
+            String checkTrainerSQL = "SELECT * FROM tbl_users WHERE u_id = ? AND u_role = 'Trainer'";
+            PreparedStatement checkTrainer = con.connectDB().prepareStatement(checkTrainerSQL);
+            checkTrainer.setInt(1, trainerId);
+            ResultSet trainerRS = checkTrainer.executeQuery();
+
+            if (!trainerRS.next()) {
+                System.out.println("Invalid Trainer ID! Registration cancelled.");
+                return;
+            }
+        } else {
+            System.out.println("This membership plan does NOT require a trainer.");
+        }
+
+        // STEP 3: Insert Member
+        String sql = "INSERT INTO tbl_members (full_name, member_age, m_id, trainer_id) VALUES (?, ?, ?, ?)";
+        PreparedStatement pst = con.connectDB().prepareStatement(sql);
+        pst.setString(1, name);
+        pst.setInt(2, age);
+        pst.setInt(3, planId);
+
+        if (trainerId == null) {
+            pst.setNull(4, java.sql.Types.INTEGER);
+        } else {
+            pst.setInt(4, trainerId);
+        }
+
+        pst.executeUpdate();
+        System.out.println("\nMember Registered Successfully!");
+
+    } catch (Exception e) {
+        System.out.println("Error registering member: " + e.getMessage());
+    }
+}
+    private static void viewMembersList(config con) {
+    try {
+        System.out.println("\n=== MEMBERS LIST ===");
+
+        String sql = "SELECT m.member_id, m.full_name, m.member_age, " +
+                     "p.m_name AS plan_name " +
+                     "FROM tbl_members m " +
+                     "LEFT JOIN tbl_membershipPlan p ON m.m_id = p.m_id";
+
+        PreparedStatement pst = con.connectDB().prepareStatement(sql);
+        ResultSet rs = pst.executeQuery();
+
+        System.out.printf("%-10s %-25s %-8s %-20s%n",
+                          "MemberID", "Full Name", "Age", "Plan");
+        System.out.println("-----------------------------------------------------------");
+
+        while (rs.next()) {
+            System.out.printf("%-10d %-25s %-8d %-20s%n",
+                    rs.getInt("member_id"),
+                    rs.getString("full_name"),
+                    rs.getInt("member_age"),
+                    rs.getString("plan_name"));
+        }
+
+    } catch (Exception e) {
+        System.out.println("Error viewing members list: " + e.getMessage());
+    }
+}
+
+
+
+}
+
    
 
 
 
 
 
-}
