@@ -9,14 +9,10 @@ public class manageMembership {
     private Scanner sc = new Scanner(System.in);
     private Connection con;
 
-    // Constructor – establish DB connection
     public manageMembership() {
         con = config.connectDB();
     }
 
-    // ============================================================
-    // DASHBOARD – MAIN MENU
-    // ============================================================
     public void membershipDashboard() {
         while (true) {
             System.out.println("\n=== MEMBERSHIP MANAGEMENT ===");
@@ -53,9 +49,6 @@ public class manageMembership {
         }
     }
 
-    // ============================================================
-    // ADD MEMBERSHIP PLAN
-    // ============================================================
     private void addPlan() {
         try {
             System.out.println("\n--- ADD MEMBERSHIP PLAN ---");
@@ -98,9 +91,6 @@ public class manageMembership {
         }
     }
 
-    // ============================================================
-    // VIEW MEMBERSHIP PLANS
-    // ============================================================
    public void viewPlans() {
     System.out.println("\n=== MEMBERSHIP PLANS ===");
     String sql = "SELECT * FROM tbl_membershipPlan ORDER BY m_id";
@@ -108,7 +98,7 @@ public class manageMembership {
     try (Statement stmt = con.createStatement();
          ResultSet rs = stmt.executeQuery(sql)) {
 
-        // Table header
+        
         System.out.printf("%-5s %-20s %-15s %-10s %-10s %-20s %-50s\n",
                 "ID", "Plan Name", "Duration", "Price", "Trainer", "Service Name", "Service Description");
         System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
@@ -123,21 +113,21 @@ public class manageMembership {
             String serviceDesc = rs.getString("s_desc");
             if (serviceDesc == null) serviceDesc = "";
 
-            // Wrap service description to fit in 50 characters
+            
             String[] wrappedDesc = wrapText(serviceDesc, 50);
 
-            // Print the first line with all columns
+            
             System.out.printf("%-5d %-20s %-15s %-10.2f %-10s %-20s %-50s\n",
                     id, planName, duration, price, requiresTrainer ? "YES" : "NO",
                     serviceName, wrappedDesc.length > 0 ? wrappedDesc[0] : "");
 
-            // Print remaining wrapped description lines (if any)
+            
             for (int i = 1; i < wrappedDesc.length; i++) {
                 System.out.printf("%-5s %-20s %-15s %-10s %-10s %-20s %-50s\n",
                         "", "", "", "", "", "", wrappedDesc[i]);
             }
 
-            // Optional: horizontal separator between rows
+            
             System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
         }
 
@@ -149,10 +139,6 @@ public class manageMembership {
     }
 }
 
-
-    // ============================================================
-    // UPDATE MEMBERSHIP PLAN
-    // ============================================================
     private void updatePlan() {
         try {
             System.out.print("\nEnter Plan ID to update: ");
@@ -209,9 +195,7 @@ public class manageMembership {
         }
     }
 
-    // ============================================================
-    // DELETE MEMBERSHIP PLAN
-    // ============================================================
+
     private void deletePlan() {
         try {
             System.out.print("\nEnter Plan ID to delete: ");
@@ -233,9 +217,7 @@ public class manageMembership {
         }
     }
 
-    // ============================================================
-    // TEXT WRAP HELPER
-    // ============================================================
+
     private String[] wrapText(String text, int width) {
         java.util.List<String> lines = new java.util.ArrayList<>();
         if (text == null || text.isEmpty()) return new String[0];

@@ -170,8 +170,5 @@ public static void viewUsers() {
         con.viewRecords(Query, membershipHeaders, membershipColumns);
     }
 
-    public Statement createStatement() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
+    
 }

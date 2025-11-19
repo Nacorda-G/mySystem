@@ -1,5 +1,6 @@
-
 package UserAuthentication;
+import static admin.Reports.reportsMenu;
+import static admin.manageMembers.memberMenu;
 import admin.manageMembership;
 import admin.manageServices;
 import main.mainCode;
@@ -30,7 +31,7 @@ public class Authentication {
 
             if (result.isEmpty()) {
                 System.out.println("INVALID CREDENTIALS\n");
-                return; // ✅ directly return instead of looping
+                return; 
             }
 
         Map<String, Object> users = result.get(0);
@@ -46,7 +47,6 @@ public class Authentication {
         String stat = statusObj.toString();
         String role = roleObj.toString();
 
-    // ✅ Check if account is approved
             if (!stat.equalsIgnoreCase("Approved")) {
                 System.out.println("Your account is still pending approval. Please wait for an admin to approve it.\n");
                 return;
@@ -59,7 +59,7 @@ public class Authentication {
         System.out.println("LOGIN SUCCESS!");
         System.out.println("Welcome, " + loggedInFullName + " (" + loggedInRole + ")\n");
 
-    // ✅ Role-based dashboard redirection
+    
             if (role.equalsIgnoreCase("Admin")) {
                 adminDashboard(con);
             } else if (role.equalsIgnoreCase("Trainer")) {
@@ -111,7 +111,7 @@ public class Authentication {
 
         config con = new config();
 
-        // ✅ check for duplicate email
+        //check for duplicate email
         while (true) {
             String qry = "SELECT * FROM tbl_users WHERE u_email = ?";
             List<Map<String, Object>> result = con.fetchRecords(qry, em);
@@ -148,7 +148,7 @@ public class Authentication {
             }
 
             int respo = mainCode.inp.nextInt();
-            mainCode.inp.nextLine(); // consume newline
+            mainCode.inp.nextLine();
 
             switch (respo) {
                 case 1:
@@ -179,8 +179,10 @@ public class Authentication {
                     membership.membershipDashboard();
                     break;
                 case 5:
+                    memberMenu();
                     break;
                 case 6:
+                    reportsMenu();
                     break;
                 case 7:
                     System.out.println("Logging out...\n");
@@ -193,11 +195,11 @@ public class Authentication {
         }
     }
     
-    public void trainerDashboard(config con) {
+    public  void trainerDashboard(config con) {
         while (true) {
         System.out.println("=== TRAINER DASHBOARD ===");
-        System.out.println("1.View Members List");
-        System.out.println("2. Check Member's Progress");        
+        System.out.println("1. View Assigned Members");
+        System.out.println("2. Manage Workout Plans");        
         System.out.println("3. Logout\n");
         System.out.print("Choose an option: ");
 
@@ -211,19 +213,227 @@ public class Authentication {
         mainCode.inp.nextLine();
 
         switch (choice) {
-            case 1:                
+            case 1:   
+                viewAssignedMembers(con);
                 break;
             case 2:
+                manageWorkoutPlans(con);
                 break;
             case 3:
                 System.out.println("Logging out...\n");
-                mainCode.mainMenu(); // ✅ return to main login/register
+                mainCode.mainMenu(); // return to main login/register
                 return;
             default:
                 System.out.println("Invalid choice. Try again.\n");
             }
         }
     }
+    
+    public void viewAssignedMembers(config con) {
+    System.out.println("\n=== MEMBERS ASSIGNED TO YOU ===");
+
+    String sql = "SELECT m.Member_id, m.full_name, p.m_name " +
+                 "FROM tbl_members m " +
+                 "JOIN tbl_membershipPlan p ON m.m_id = p.m_id " +
+                 "WHERE p.requires_trainer = 1 AND m.trainer_id = ?";
+
+    try (Connection conn = con.connectDB();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+        pstmt.setInt(1, loggedInUserId);
+
+        ResultSet rs = pstmt.executeQuery();
+
+        System.out.printf("%-10s %-25s %-20s\n", "ID", "Name", "Membership Plan");
+        System.out.println("--------------------------------------------------------");
+
+        boolean found = false;
+
+        while (rs.next()) {
+            found = true;
+            System.out.printf("%-10d %-25s %-20s\n",
+                              rs.getInt("Member_id"),
+                              rs.getString("full_name"),
+                              rs.getString("m_name"));
+        }
+
+        if (!found) {
+            System.out.println("No members assigned to you that require a trainer.\n");
+        }
+
+        } catch (SQLException e) {
+            System.out.println("Error fetching member details: " + e.getMessage());
+        }
+    }
+
+    public void manageWorkoutPlans(config con) {
+        while (true) {
+            System.out.println("\n=== MANAGE MEMBER WORKOUT PLANS ===");
+
+            viewAssignedMembers(con);
+        
+            System.out.print("\nEnter the **Member ID** to manage plans for (or '0' to go back): ");
+        
+            int selectedMemberID;
+            if (mainCode.inp.hasNextInt()) {
+                selectedMemberID = mainCode.inp.nextInt();
+                mainCode.inp.nextLine(); 
+            } else {
+                mainCode.inp.nextLine();
+                System.out.println("Invalid input. Returning to dashboard.");
+                return;
+            }
+
+            if (selectedMemberID == 0) {
+                return; // Go back to trainerDashboard
+            }
+        
+            while (true) {
+                System.out.println("\n--- Actions for Member ID: " + selectedMemberID + " ---");
+                System.out.println("1. View/Select Existing Plan");
+                System.out.println("2. Create Workout Plan");
+                System.out.println("3. Go back to Member Selection");
+                System.out.print("Choose an option: ");
+
+                if (!mainCode.inp.hasNextInt()) {
+                    System.out.println("Invalid input. Please enter a number.");
+                    mainCode.inp.nextLine();
+                    continue;
+                }
+
+            int planChoice = mainCode.inp.nextInt();
+            mainCode.inp.nextLine();
+
+            switch (planChoice) {
+                case 1:
+                    viewExistingPlans(con, selectedMemberID);
+                    break;
+                case 2:
+                    createNewPlan(con, selectedMemberID);
+                    break;
+                case 3:
+                    System.out.println("Returning to Member Selection...\n");
+                    break; 
+                default:
+                    System.out.println("Invalid choice. Try again.");
+                    break;
+            }
+            if (planChoice == 3) {
+                break; // Exit the inner loop to re-select a member
+            }
+        }
+    }
+}
+
+public void viewExistingPlans(config con, int memberID) {
+    System.out.println("\n=== EXISTING WORKOUT PLANS FOR MEMBER ID: " + memberID + " ===");
+
+    String sql = "SELECT plan_id, plan_name, exercises, start_date, end_date, created_at " +
+                 "FROM tbl_workoutPlans WHERE member_id = ?";
+
+    try (PreparedStatement pstmt = con.connectDB().prepareStatement(sql)) {
+        pstmt.setInt(1, memberID);
+        ResultSet rs = pstmt.executeQuery();
+
+        boolean hasPlans = false;
+        System.out.printf("%-5s %-25s %-40s %-12s %-12s %-20s\n", "ID", "Plan Name", "Exercises", "Start Date", "End Date", "Created At");
+        System.out.println("---------------------------------------------------------------------------------------------------------");
+
+        while (rs.next()) {
+            hasPlans = true;
+            int planId = rs.getInt("plan_id");
+            String planName = rs.getString("plan_name");
+            String exercises = rs.getString("exercises");
+            String startDate = rs.getString("start_date");
+            String endDate = rs.getString("end_date");
+            String createdAt = rs.getString("created_at");
+
+            String wrappedExercises = wrapText(exercises, 40);
+            String[] exerciseLines = wrappedExercises.split("\n");
+
+            for (int i = 0; i < exerciseLines.length; i++) {
+                if (i == 0) {
+                    System.out.printf("%-5d %-25s %-40s %-12s %-12s %-20s\n",
+                            planId, planName, exerciseLines[i], startDate, endDate, createdAt);
+                } else {
+                    System.out.printf("%-5s %-25s %-40s %-12s %-12s %-20s\n", "", "", exerciseLines[i], "", "", "");
+                }
+            }
+        }
+
+        if (!hasPlans) {
+            System.out.println("No workout plans found for this member.");
+        }
+
+    } catch (SQLException e) {
+        System.out.println("Error fetching workout plans: " + e.getMessage());
+    }
+}
+
+
+
+public void createNewPlan(config con, int memberID) {
+    System.out.println("\n=== CREATE NEW WORKOUT PLAN ===");
+
+    System.out.print("Enter plan name: ");
+    String planName = mainCode.inp.nextLine();
+
+    System.out.print("Enter exercises (comma separated or details): ");
+    String exercises = mainCode.inp.nextLine();
+
+    System.out.print("Enter start date (YYYY-MM-DD): ");
+    String startDate = mainCode.inp.nextLine();
+
+    System.out.print("Enter end date (YYYY-MM-DD): ");
+    String endDate = mainCode.inp.nextLine();
+
+    String sql = "INSERT INTO tbl_workoutPlans(member_id, plan_name, exercises, start_date, end_date, created_at) " +
+                 "VALUES (?, ?, ?, ?, ?, datetime('now'))";
+
+    try (PreparedStatement pstmt = con.connectDB().prepareStatement(sql)) {
+        pstmt.setInt(1, memberID);
+        pstmt.setString(2, planName);
+        pstmt.setString(3, exercises);
+        pstmt.setString(4, startDate);
+        pstmt.setString(5, endDate);
+
+        int rows = pstmt.executeUpdate();
+        if (rows > 0) {
+            System.out.println("✔ Workout plan created successfully!");
+
+            //Send email to the member
+            String query = "SELECT full_name, member_email FROM tbl_members WHERE member_id = ?";
+            try (PreparedStatement ps = con.connectDB().prepareStatement(query)) {
+                ps.setInt(1, memberID);
+                ResultSet rs = ps.executeQuery();
+                if (rs.next()) {
+                    String fullName = rs.getString("full_name");
+                    String email = rs.getString("member_email");
+
+                    helper.EmailHelper.sendWorkoutPlanEmail(
+                        email,
+                        fullName,
+                        planName,
+                        exercises,
+                        startDate,
+                        endDate
+                    );
+                }
+            } catch (SQLException ex) {
+                System.out.println("❌ Failed to fetch member info for email: " + ex.getMessage());
+            }
+
+        } else {
+            System.out.println("❌ Failed to create workout plan.");
+        }
+
+    } catch (SQLException e) {
+        System.out.println("Error creating workout plan: " + e.getMessage());
+    }
+}
+
+
+
 
     public static void staffDashboard(config con) {
     int choice;
@@ -265,39 +475,34 @@ public class Authentication {
     }
 }
 
-    
-
-    // ============================================
-    // CASE 1 — REGISTER MEMBER
-    // ============================================
-    private static void registerMember(config con) {
+private static void registerMember(config con) {
     System.out.println("\n=== REGISTER MEMBER ===");
     
-    // --- 1. Input Collection ---
+    
     System.out.print("Full Name: ");
     String name = mainCode.inp.nextLine();
 
     System.out.print("Age: ");
-    int age = mainCode.inp.nextInt(); // maps to member_age
+    int age = mainCode.inp.nextInt(); 
     mainCode.inp.nextLine();
+   
+    System.out.print("Email: "); 
+    String email = mainCode.inp.nextLine(); 
     
     manageMembership membership = new manageMembership();
-    membership.viewPlans(); // Assumes this uses a separate, closed connection or doesn't leak one
+    membership.viewPlans(); 
 
     System.out.print("Membership Plan ID: ");
-    int planId = mainCode.inp.nextInt(); // maps to m_id
+    int planId = mainCode.inp.nextInt(); 
     mainCode.inp.nextLine();
     
-    Integer trainerId = null; // Will store the trainer ID if required
-
-    // --- 2. Database Operations (Single Connection) ---
-    // The main Connection is opened here and guaranteed to be closed at the end of the try block.
+    Integer trainerId = null; 
+    
     try (Connection dbConnection = con.connectDB()) {
         
         // Validate Plan
         String checkPlanSQL = "SELECT requires_trainer FROM tbl_membershipPlan WHERE m_id = ?";
         
-        // Use try-with-resources for PreparedStatement and ResultSet (guarantees closure)
         try (PreparedStatement checkPlan = dbConnection.prepareStatement(checkPlanSQL)) {
             checkPlan.setInt(1, planId);
             
@@ -308,14 +513,12 @@ public class Authentication {
                 }
                 
                 boolean requiresTrainer = planRS.getBoolean("requires_trainer");
-                
-                // Trainer Selection Block
+                                
                 if (requiresTrainer) {
-                    // Show Available Trainers
+                    
                     System.out.println("\n--- Available Trainers ---");
                     String trainerListSQL = "SELECT u_id, u_name FROM tbl_users WHERE u_role = 'Trainer'";
                     
-                    // Use try-with-resources for Trainer Listing
                     try (PreparedStatement listTrainers = dbConnection.prepareStatement(trainerListSQL);
                          ResultSet trainerList = listTrainers.executeQuery()) {
                         
@@ -323,17 +526,13 @@ public class Authentication {
                             System.out.printf("ID: %-5d Name: %s%n",
                                     trainerList.getInt("u_id"), trainerList.getString("u_name"));
                         }
-                    } // listTrainers and trainerList are closed here
-
-                    // Input Trainer ID
+                    } 
                     System.out.print("\nEnter Trainer ID: ");
                     trainerId = mainCode.inp.nextInt();
                     mainCode.inp.nextLine();
 
-                    // Validate Trainer
                     String checkTrainerSQL = "SELECT * FROM tbl_users WHERE u_id = ? AND u_role = 'Trainer'";
                     
-                    // Use try-with-resources for Trainer Validation
                     try (PreparedStatement checkTrainer = dbConnection.prepareStatement(checkTrainerSQL)) {
                         checkTrainer.setInt(1, trainerId);
                         
@@ -342,39 +541,37 @@ public class Authentication {
                                 System.out.println("Invalid Trainer ID! Registration cancelled.");
                                 return;
                             }
-                        } // trainerRS is closed here
-                    } // checkTrainer is closed here
+                        }                    
+                    } 
                     
                 } else {
                     System.out.println("This membership plan does NOT require a trainer.");
                 }
-            } // planRS is closed here
-        } // checkPlan is closed here
+            } 
+        }
         
-        // STEP 3: Insert Member (The main write operation)
-        String sql = "INSERT INTO tbl_members (full_name, member_age, m_id, trainer_id) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO tbl_members (full_name, member_age, member_email, m_id, trainer_id) VALUES (?, ?, ?, ?, ?)";
         
-        // Use try-with-resources for the final INSERT statement
         try (PreparedStatement pst = dbConnection.prepareStatement(sql)) {
             pst.setString(1, name);
             pst.setInt(2, age);
-            pst.setInt(3, planId);
+           
+            pst.setString(3, email); 
+            pst.setInt(4, planId);
 
             if (trainerId == null) {
-                pst.setNull(4, java.sql.Types.INTEGER);
+                pst.setNull(5, java.sql.Types.INTEGER);
             } else {
-                pst.setInt(4, trainerId);
+                pst.setInt(5, trainerId);
             }
 
             pst.executeUpdate();
             System.out.println("\nMember Registered Successfully!");
-        } // pst is closed here
+        } 
 
-    } catch (Exception e) {
-        // This catch block handles SQL exceptions and input errors.
+    } catch (Exception e) {       
         System.out.println("Error registering member: " + e.getMessage());
     } 
-    // dbConnection is automatically closed here, releasing the database lock.
 }
     private static void viewMembersList(config con) {
     try {
@@ -404,6 +601,18 @@ public class Authentication {
         System.out.println("Error viewing members list: " + e.getMessage());
     }
 }
+    
+    public static String wrapText(String text, int lineLength) {
+    StringBuilder wrapped = new StringBuilder();
+    int index = 0;
+    while (index < text.length()) {
+        int end = Math.min(index + lineLength, text.length());
+        wrapped.append(text, index, end).append("\n");
+        index = end;
+    }
+    return wrapped.toString();
+}
+
 
 
 

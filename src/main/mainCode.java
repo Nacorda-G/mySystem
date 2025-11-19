@@ -37,17 +37,20 @@ public class mainCode {
                     break;
                 case 3:
                     System.out.println("Exiting system...");
-                    return; 
+                    break; 
                 default:
                     System.out.println("Invalid input, Try Again.\n");
                     break;
             }
         }
     }
-
+    
     
     public static void main(String[] args) {
         mainMenu(); 
     }
 }
+    
+    
+    
 
